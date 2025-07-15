@@ -2,7 +2,7 @@ from enum import Enum
 import re, difflib
 from typing import Dict, List, Optional, Tuple, Union
 from graphviz import Digraph
-from connection import dbConnection
+from ..connection import dbConnection
 
 
 class Table:
@@ -159,7 +159,7 @@ class ERDiagram:
         Args:
             font_name (str, optional): Font name. Defaults to "Arial".
             font_size (int, optional): Font size. Defaults to 14.
-            dpi (int, optional): Image resolution. Defaults to 300.
+            dpi (int, optional): Image resolution. Defaults to 1300.
             cell_padding (int, optional): Cell padding. Defaults to 4.
             comment_font_size (int, optional): Comment font size. Defaults to 10.
             comment_color (str, optional): Comment text color. Defaults to "#666666".
@@ -294,7 +294,7 @@ class ERDiagram:
         for table in self.tables.values():
             render: bool = False
             if render_tables == None:
-                reder = True
+                render = True
             elif table.name in render_tables:
                 render = True
 
@@ -328,7 +328,7 @@ class ERDiagram:
 
             render: bool = False
             if render_tables == None:
-                reder = True
+                render = True
             elif from_table in render_tables and to_table in render_tables:
                 render = True
 
@@ -486,7 +486,7 @@ class ERGenerator:
         username: Optional[str] = None,
         password: Optional[str] = None,
         reasoning_FK: bool = False,
-        disable_sql_FK: bool = True,
+        disable_sql_FK: bool = False,
     ):
         """
         Initialize an ERGenerator instance.
@@ -512,7 +512,7 @@ class ERGenerator:
     def _analysis_database_mssql(
         self,
         reasoning_FK: bool = False,
-        disable_sql_FK: bool = True,
+        disable_sql_FK: bool = False,
     ) -> None:
         """
         Analyze the database schema and generate ER diagrams.

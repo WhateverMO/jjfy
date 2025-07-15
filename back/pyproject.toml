@@ -11,8 +11,6 @@ dependencies = [
   "pyodbc>=5.2.0",
 ]
 
-# dependencies = ["django>=4.2.21", "mariadb>=1.1.12", "ruff>=0.11.10"]
-
 
 [tool.pyright]
 venvPath = "."

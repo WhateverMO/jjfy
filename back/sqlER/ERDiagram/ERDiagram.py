@@ -27,6 +27,29 @@ class Table:
         self.schema = schema
         self.comments: List[str] = []  # External comments for the table
 
+    def get_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "fields": [
+                {"name": field[0], "type": field[1], "constraint": field[2]}
+                for field in self.fields
+            ],
+            "primary_keys": self.primary_keys,
+            "foreign_keys": [
+                {
+                    "field": fk[0],
+                    "ref_table": fk[1],
+                    "ref_field": fk[2],
+                    "constraint": fk[3],
+                    "reasoning": fk[4],
+                }
+                for fk in self.foreign_keys
+            ],
+            "is_view": self.is_view,
+            "schema": self.schema,
+            "comments": self.comments,
+        }
+
     def add_field(self, name: str, type: str, constraint: str = "") -> None:
         """
         Add a field to the table/view.

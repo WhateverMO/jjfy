@@ -95,6 +95,11 @@ def testHMTL(request: HttpRequest) -> HttpResponse:
                 </label>
                 加载中...
               </div>
+            <div style="flex:1;">
+              <div style="font-weight:bold; margin-bottom:0.5em;">问题表</div>
+              <div class="item-list" id="problem_tables-list">
+                加载中...
+              </div>
             </div>
           </div>
           <button type="submit" style="margin-top:1em;">绘制</button>
@@ -107,8 +112,10 @@ def testHMTL(request: HttpRequest) -> HttpResponse:
           ]).then(([tableData, viewData]) => {{
             const tableList = document.getElementById('table-list');
             const viewList = document.getElementById('view-list');
+            const problemTablesList = document.getElementById('problem_tables-list');
             tableList.innerHTML = '';
             viewList.innerHTML = '';
+            problemTablesList.innerHTML = '';
             // 渲染表
             if (tableData.table_names && tableData.table_names.length > 0) {{
               tableData.table_names.forEach(name => {{
@@ -136,6 +143,14 @@ def testHMTL(request: HttpRequest) -> HttpResponse:
                 label.appendChild(document.createTextNode(' ' + name));
                 viewList.appendChild(label);
               }});
+            }}
+            // 渲染问题表
+            if (tableData.problem_tables && tableData.problem_tables.length > 0) {{
+                tableData.problem_tables.forEach(name => {{
+                    const div = document.createElement('div');
+                    div.textContent = name;
+                    problemTablesList.appendChild(div);
+                }});
             }}
           }});
 
@@ -180,16 +195,18 @@ def testHMTL(request: HttpRequest) -> HttpResponse:
 
 
 def get_table_names(request: HttpRequest) -> JsonResponse:
-    erd: ERDiagram = ERGenerator(
+    erg: ERGenerator = ERGenerator(
         driver=driver,
         server=server,
         database=Name_database,
         username=username,
         password=password,
-    ).diagram
+    )
+    erd: ERDiagram = erg.diagram
     return JsonResponse(
         {
             "table_names": erd.get_table_names(),
+            "problem_tables": erg.get_problem_tables(),
         }
     )
 

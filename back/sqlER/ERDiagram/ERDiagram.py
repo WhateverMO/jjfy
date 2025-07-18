@@ -601,6 +601,7 @@ class ERGenerator:
         self.schemas: list[str] = []
         self.tables: list[Table] = []
         self.relations: list[tuple[str, str, str, str, str, bool]] = []
+        self.problem_tables: list[str] = []
 
         class field_reasoing_FK:
             def __init__(self, field_name: str):
@@ -697,6 +698,7 @@ class ERGenerator:
                         try:
                             fields = dbcnxt.fields(table_name, schema_name=schema)
                         except Exception:
+                            self.problem_tables.append(table_name)
                             continue
                         for field in fields:
                             field_name = field[0]
@@ -797,6 +799,9 @@ class ERGenerator:
                 relation_label=fk_constraint,
                 reasoning=reasoning,
             )
+
+    def get_problem_tables(self):
+        return self.problem_tables
 
     def render_diagrams(
         self,

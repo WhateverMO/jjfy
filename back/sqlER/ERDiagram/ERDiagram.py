@@ -343,10 +343,10 @@ class ERDiagram:
 
         # Render relationships (only for tables)
         for rel in self.relations:
-            from_table = rel["from_table"]
-            from_field = rel["from_field"]
-            to_table = rel["to_table"]
-            to_field = rel["to_field"]
+            from_table = rel["to_table"]
+            from_field = rel["to_field"]
+            to_table = rel["from_table"]
+            to_field = rel["from_field"]
             label = rel["label"]
             reasoning = rel["reasoning"]
 
@@ -561,26 +561,32 @@ class ERGenerator:
             def reasoning(self) -> None:
                 # sort the tables by the number of primary keys
                 self.pk_tables.sort(key=lambda x: x[1])
-                onePKT_num = 0
                 similaritest: float = 0.0
                 similarity: float = 0.0
                 similaritest_table = ""
                 if len(self.pk_tables) != 1:
+                    not_onePKT = []
+                    onePKT = []
                     for table, pk_num in self.pk_tables:
                         if pk_num == 1:
-                            onePKT_num += 1
                             similaritest_table = table
-                        if pk_num > 1:
-                            break
-                    if onePKT_num != 1:
-                        for table, pk_num in self.pk_tables:
-                            # select the most similar table (calculate table,field_name similarity)
-                            similarity = difflib.SequenceMatcher(
-                                None, self.field_name, table
-                            ).ratio()
-                            if similarity > similaritest:
-                                similaritest = similarity
-                                similaritest_table = table
+                            onePKT.append((table, pk_num))
+                        else:
+                            not_onePKT.append((table, pk_num))
+                    onePKT_num = len(onePKT)
+                    for_PKT = onePKT
+                    if onePKT_num == 1:
+                        for_PKT = [(similaritest_table, 1)]
+                    elif onePKT_num < 1:
+                        for_PKT = not_onePKT
+                    for table, pk_num in for_PKT:
+                        # select the most similar table (calculate table,field_name similarity)
+                        similarity = difflib.SequenceMatcher(
+                            None, self.field_name, table
+                        ).ratio()
+                        if similarity > similaritest:
+                            similaritest = similarity
+                            similaritest_table = table
                     for table, _ in self.pk_tables:
                         if table != similaritest_table:
                             self.fk_tables.append(table)
@@ -671,25 +677,25 @@ class ERGenerator:
                         if not disable_sql_FK:
                             foreign_keys = dbcnxt.fk(table[2])["foreignKeys"]
                             foreign_key_fields_constraint = [
-                                (fk[2], fk[3], fk[6], fk[7], fk[-3])
+                                (fk[6], fk[7], fk[2], fk[3], fk[-3])
                                 for fk in foreign_keys
                             ]
                             for (
-                                fk_table,
-                                fk_field,
                                 fk_ref_table,
                                 fk_ref_field,
+                                fk_table,
+                                fk_field,
                                 fk_constraint,
                             ) in foreign_key_fields_constraint:
-                                t.add_foreign_key(
-                                    fk_field, fk_ref_table, fk_ref_field, fk_constraint
-                                )
+                                # t.add_foreign_key(
+                                #     fk_field, fk_ref_table, fk_ref_field, fk_constraint
+                                # )
                                 self.relations.append(
                                     (
-                                        fk_table,
-                                        fk_field,
                                         fk_ref_table,
                                         fk_ref_field,
+                                        fk_table,
+                                        fk_field,
                                         fk_constraint,
                                         False,
                                     )
@@ -708,9 +714,9 @@ class ERGenerator:
                 for fk_table in fk_tables:
                     self.relations.append(
                         (
-                            pk_table,
-                            FieldrFK,
                             fk_table,
+                            FieldrFK,
+                            pk_table,
                             FieldrFK,
                             "FK_" + fk_table + "_" + pk_table + "_" + FieldrFK,
                             True,
@@ -718,14 +724,14 @@ class ERGenerator:
                     )
 
         for relation in self.relations:
-            fk_table, fk_field, fk_ref_table, fk_ref_field, fk_constraint, reasoning = (
+            fk_ref_table, fk_ref_field, fk_table, fk_field, fk_constraint, reasoning = (
                 relation
             )
             self.diagram.add_relation(
-                fk_table,
-                fk_field,
                 fk_ref_table,
                 fk_ref_field,
+                fk_table,
+                fk_field,
                 relation_label=fk_constraint,
                 reasoning=reasoning,
             )

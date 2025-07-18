@@ -2,6 +2,7 @@ from enum import Enum
 import re, difflib
 from typing import Dict, List, Optional, Tuple, Union
 from graphviz import Digraph
+from pyodbc import Error
 from ..connection import dbConnection
 
 
@@ -632,7 +633,10 @@ class ERGenerator:
                         primary_key_fields_constraint = [
                             (fk[3], fk[-1]) for fk in primary_keys
                         ]
-                        fields = dbcnxt.fields(table_name, schema_name=schema)
+                        try:
+                            fields = dbcnxt.fields(table_name, schema_name=schema)
+                        except Exception:
+                            continue
                         for field in fields:
                             field_name = field[0]
                             field_type = "UNKNOWN"

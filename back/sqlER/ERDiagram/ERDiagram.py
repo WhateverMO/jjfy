@@ -19,7 +19,9 @@ class Table:
             schema (str, optional): Schema name. Defaults to None.
         """
         self.name = name
-        self.fields: List[Tuple[str, str, str]] = []  # (field name, type, constraint)
+        self.fields: List[
+            Tuple[str, str, str, bool]
+        ] = []  # (field name, type, constraint)
         self.primary_keys: List[str] = []
         self.foreign_keys: List[
             Tuple[str, str, str, str, bool]
@@ -32,7 +34,12 @@ class Table:
         return {
             "name": self.name,
             "fields": [
-                {"name": field[0], "type": field[1], "constraint": field[2]}
+                {
+                    "name": field[0],
+                    "type": field[1],
+                    "constraint": field[2],
+                    "nullable": field[3],
+                }
                 for field in self.fields
             ],
             "primary_keys": self.primary_keys,
@@ -51,7 +58,9 @@ class Table:
             "comments": self.comments,
         }
 
-    def add_field(self, name: str, type: str, constraint: str = "") -> None:
+    def add_field(
+        self, name: str, type: str, constraint: str = "", nullable: bool = True
+    ) -> None:
         """
         Add a field to the table/view.
 
@@ -60,7 +69,7 @@ class Table:
             type (str): Data type
             constraint (str, optional): Field constraints. Defaults to "".
         """
-        self.fields.append((name, type, constraint))
+        self.fields.append((name, type, constraint, nullable))
 
     def add_primary_key(self, field: str, constraint: str = "PK") -> None:
         """
@@ -72,7 +81,7 @@ class Table:
         """
         self.primary_keys.append(field)
         # Update field constraint to include PK
-        for i, (fname, ftype, fconstraint) in enumerate(self.fields):
+        for i, (fname, ftype, fconstraint, fnullable) in enumerate(self.fields):
             if fname == field:
                 if fconstraint:
                     # Preserve existing constraints and add PK
@@ -82,7 +91,7 @@ class Table:
                         new_constraint = fconstraint
                 else:
                     new_constraint = constraint
-                self.fields[i] = (fname, ftype, new_constraint)
+                self.fields[i] = (fname, ftype, new_constraint, fnullable)
 
     def add_foreign_key(
         self,
@@ -104,7 +113,7 @@ class Table:
         # Add foreign key relationship
         self.foreign_keys.append((field, ref_table, ref_field, constraint, reasoning))
         # Update field constraint to include FK
-        for i, (fname, ftype, fconstraint) in enumerate(self.fields):
+        for i, (fname, ftype, fconstraint, fnullable) in enumerate(self.fields):
             if fname == field:
                 if fconstraint:
                     # Preserve existing constraints and add FK
@@ -116,7 +125,7 @@ class Table:
                 else:
                     # new_constraint = constraint
                     new_constraint = "FK"
-                self.fields[i] = (fname, ftype, new_constraint)
+                self.fields[i] = (fname, ftype, new_constraint, fnullable)
 
     def add_comment(self, comment: str) -> None:
         """
@@ -133,7 +142,7 @@ class Table:
             + "Fields:\n"
         )
         for field in self.fields:
-            s += f"  - {field[0]}: {field[1]} ({field[2]})\n"
+            s += f"  - {field[0]}: {field[1]} nullable:{field[3]} ({field[2]})\n"
         if self.comments:
             s += "Comments:\n"
             for comment in self.comments:
@@ -413,12 +422,13 @@ class ERDiagram:
             )
 
         rows = [
-            f'<TR><TD COLSPAN="3" BGCOLOR="{header_bg}">{title}</TD></TR>',
-            '<TR><TD ALIGN="LEFT"><B>Column</B></TD><TD ALIGN="LEFT"><B>Type</B></TD><TD ALIGN="LEFT"><B>Constraint</B></TD></TR>',
+            f'<TR><TD COLSPAN="4" BGCOLOR="{header_bg}">{title}</TD></TR>',
+            '<TR><TD ALIGN="LEFT"><B>Column</B></TD><TD ALIGN="LEFT"><B>Type</B></TD><TD ALIGN="LEFT"><B>nullable</B></TD><TD ALIGN="LEFT"><B>Constraint</B></TD></TR>',
         ]
 
-        for name, type, constraint in table.fields:
+        for name, type, constraint, nullable in table.fields:
             type_cell = f'<TD ALIGN="LEFT">{type}</TD>'
+            nullable_cell: str = f'<TD ALIGN="LEFT">{str(nullable).upper()}</TD>'
             DIVISION = 13
             # Handle fields that are both PK and FK
             if constraint and "PK" in constraint and "FK" in constraint:
@@ -433,27 +443,30 @@ class ERDiagram:
                         FK_constraint = constraint
                 name_cell = f'<TD rowspan="2" ALIGN="LEFT"><B><I>{name}</I></B></TD>'
                 type_cell = f'<TD rowspan="2" ALIGN="LEFT">{type}</TD>'
+                nullable_cell = (
+                    f'<TD rowspan="2" ALIGN="LEFT">{str(nullable).upper()}</TD>'
+                )
                 PK_constraint_cell = (
                     f'<TD ALIGN="LEFT" BGCOLOR="#ffcccc">{PK_constraint}</TD>'
                 )
                 FK_constraint_cell = (
                     f'<TD ALIGN="LEFT" BGCOLOR="#ccffcc">{FK_constraint}</TD>'
                 )
-                row = f"<TR>{name_cell}{type_cell}{PK_constraint_cell}</TR><TR>{FK_constraint_cell}</TR>"
+                row = f"<TR>{name_cell}{type_cell}{nullable_cell}{PK_constraint_cell}</TR><TR>{FK_constraint_cell}</TR>"
             elif constraint and "PK" in constraint:
                 constraint += " " * int(len(constraint) / DIVISION)
                 name_cell = f'<TD ALIGN="LEFT"><B>{name}</B></TD>'
                 constraint_cell = (
                     f'<TD ALIGN="LEFT" BGCOLOR="#ffcccc">{constraint}</TD>'
                 )
-                row = f"<TR>{name_cell}{type_cell}{constraint_cell}</TR>"
+                row = f"<TR>{name_cell}{type_cell}{nullable_cell}{constraint_cell}</TR>"
             elif constraint and "FK" in constraint:
                 constraint += " " * int(len(constraint) / DIVISION)
                 name_cell = f'<TD ALIGN="LEFT"><I>{name}</I></TD>'
                 constraint_cell = (
                     f'<TD ALIGN="LEFT" BGCOLOR="#ccffcc">{constraint}</TD>'
                 )
-                row = f"<TR>{name_cell}{type_cell}{constraint_cell}</TR>"
+                row = f"<TR>{name_cell}{type_cell}{nullable_cell}{constraint_cell}</TR>"
             else:
                 constraint += " " * int(len(constraint) / DIVISION)
                 name_cell = f'<TD ALIGN="LEFT">{name}</TD>'
@@ -462,7 +475,7 @@ class ERDiagram:
                     if constraint
                     else '<TD ALIGN="LEFT"></TD>'
                 )
-                row = f"<TR>{name_cell}{type_cell}{constraint_cell}</TR>"
+                row = f"<TR>{name_cell}{type_cell}{nullable_cell}{constraint_cell}</TR>"
 
             rows.append(row)
 
@@ -510,6 +523,7 @@ class ERGenerator:
         username: Optional[str] = None,
         password: Optional[str] = None,
         reasoning_FK: bool = False,
+        reasoning_all_FK: bool = False,
         disable_sql_FK: bool = False,
     ):
         """
@@ -531,11 +545,16 @@ class ERGenerator:
         self.username: Optional[str] = username
         self.password: Optional[str] = password
         self.diagram: ERDiagram = ERDiagram(str(database))
-        self._analysis_database_mssql(reasoning_FK, disable_sql_FK)
+        self._analysis_database_mssql(
+            reasoning_FK=reasoning_FK,
+            reasoning_all_FK=reasoning_all_FK,
+            disable_sql_FK=disable_sql_FK,
+        )
 
     def _analysis_database_mssql(
         self,
         reasoning_FK: bool = False,
+        reasoning_all_FK: bool = False,
         disable_sql_FK: bool = False,
     ) -> None:
         """
@@ -564,6 +583,11 @@ class ERGenerator:
                 similaritest: float = 0.0
                 similarity: float = 0.0
                 similaritest_table = ""
+                if len(self.pk_tables) + len(self.fk_tables) <= 1:
+                    return
+                if len(self.pk_tables) == 0:
+                    self.pk_tables = [(fkt, 1) for fkt in self.fk_tables]
+                    self.fk_tables = []
                 if len(self.pk_tables) != 1:
                     not_onePKT = []
                     onePKT = []
@@ -646,12 +670,13 @@ class ERGenerator:
                         for field in fields:
                             field_name = field[0]
                             field_type = "UNKNOWN"
+                            field_nullable = field[6]
                             match = re.search(r"'(.+?)'", str(field[1]))
                             if match:
                                 full_name = match.group(1)
                                 # 分割并取最后一部分（如 'datetime'）
                                 field_type = full_name.split(".")[-1].lower()
-                            t.add_field(field_name, field_type)
+                            t.add_field(field_name, field_type, nullable=field_nullable)
                             if reasoning_FK and not is_view:
                                 pk_fields = [
                                     pk_field
@@ -705,9 +730,15 @@ class ERGenerator:
                         self.tables.append(t)
 
         for FieldrFK, rFKdict in reasoning_FK_dict.items():
-            if (len(rFKdict.pk_tables) != 0 and len(rFKdict.fk_tables) != 0) or len(
-                rFKdict.pk_tables
-            ) > 1:
+            if (
+                (len(rFKdict.pk_tables) != 0 and len(rFKdict.fk_tables) != 0)
+                or len(rFKdict.pk_tables) > 1
+                or (
+                    reasoning_all_FK
+                    and len(rFKdict.pk_tables) == 0
+                    and len(rFKdict.fk_tables) > 1
+                )
+            ):
                 rFKdict.reasoning()
                 pk_table = rFKdict.pk_tables[0][0]
                 fk_tables = rFKdict.fk_tables

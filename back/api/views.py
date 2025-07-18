@@ -1,4 +1,5 @@
 from typing import Optional
+import re
 from django.http import HttpRequest, HttpResponse, JsonResponse
 
 from sqlER import ERDiagram, ERGenerator, TypeRankdir
@@ -18,7 +19,7 @@ def testHMTL(request: HttpRequest) -> HttpResponse:
     # it can select [disable_sqlFK:bool,reasoning_FK:bool,tables:list[str],render_related:bool] to render ER diagram
     data_api_url = "/api/get_table_names"
     view_api_url = "/api/get_view_names"
-    draw_url = "/api/erfit"
+    draw_url = "/api/er"
 
     render_tables: Optional[list[str]] = None
     reasoning_FK: bool = True
@@ -56,6 +57,10 @@ def testHMTL(request: HttpRequest) -> HttpResponse:
             <label>
               <input type="checkbox" name="reasoning_FK" checked>
               推理外键
+            </label>
+            <label>
+              <input type="checkbox" name="reasoning_all_FK" checked>
+              推理非主键字段
             </label>
             <label style="margin-left:2em;">
               图方向:
@@ -158,6 +163,7 @@ def testHMTL(request: HttpRequest) -> HttpResponse:
             params.set('render_related', document.querySelector('input[name="render_related"]').checked ? 'True' : 'False');
             params.set('disable_sqlFK', document.querySelector('input[name="disable_sqlFK"]').checked ? 'True' : 'False');
             params.set('reasoning_FK', document.querySelector('input[name="reasoning_FK"]').checked ? 'True' : 'False');
+            params.set('reasoning_all_FK', document.querySelector('input[name="reasoning_all_FK"]').checked ? 'True' : 'False');
             params.set('rankdir', document.querySelector('select[name="rankdir"]').value);
             window.location.href = "{draw_url}?" + params.toString();
           }};
@@ -231,67 +237,17 @@ def er(request: HttpRequest) -> HttpResponse:
     if request.method == "GET":
         render_tables = None
         reasoning_FK = True
+        reasoning_all_FK = False
         disable_sqlFK = False
         rankdir = TypeRankdir.LR
         render_related = True
 
-        render_tables = request.GET.get("tables", "")
+        render_tables: str = request.GET.get("tables", None)
+        render_tables: list[str] = render_tables.split(",") if render_tables else None
         reasoning_FK: bool = request.GET.get("reasoning_FK", "true").lower() == "true"
-        disable_sqlFK: bool = (
-            request.GET.get("disable_sqlFK", "false").lower() == "true"
+        reasoning_all_FK: bool = (
+            request.GET.get("reasoning_all_FK", "false").lower() == "true"
         )
-        if request.GET.get("rankdir", "LR") == "LR":
-            rankdir: TypeRankdir = TypeRankdir.LR
-        else:
-            rankdir: TypeRankdir = TypeRankdir.TB
-
-        render_related: bool = (
-            request.GET.get("render_related", "true").lower() == "true"
-        )
-        print(f"Received data: {render_tables}")
-        diagram_gen = ERGenerator(
-            driver=driver,
-            server=server,
-            database=Name_database,
-            username=username,
-            password=password,
-            reasoning_FK=reasoning_FK,
-            disable_sql_FK=disable_sqlFK,
-        )
-        svg_data = diagram_gen.render_diagrams()
-        return HttpResponse(
-            svg_data,
-            content_type="image/svg+xml",
-            headers={"Content-Disposition": "inline; filename=er_diagram.svg"},
-        )
-    else:
-        diagram_gen = ERGenerator(
-            driver=driver,
-            server=server,
-            database=Name_database,
-            username=username,
-            password=password,
-        )
-        svg_data = diagram_gen.render_diagrams()
-        return HttpResponse(
-            svg_data,
-            content_type="image/svg+xml",
-            headers={"Content-Disposition": "inline; filename=er_diagram.svg"},
-        )
-
-
-def erfit(request: HttpRequest) -> HttpResponse:
-    """Serve ER diagram as SVG."""
-    if request.method == "GET":
-        render_tables = None
-        reasoning_FK = True
-        disable_sqlFK = False
-        rankdir = TypeRankdir.LR
-        render_related = True
-
-        render_tables = request.GET.get("tables", None)
-        render_tables = render_tables.split(",") if render_tables else None
-        reasoning_FK: bool = request.GET.get("reasoning_FK", "true").lower() == "true"
         disable_sqlFK: bool = (
             request.GET.get("disable_sqlFK", "false").lower() == "true"
         )
@@ -304,7 +260,7 @@ def erfit(request: HttpRequest) -> HttpResponse:
             request.GET.get("render_related", "true").lower() == "true"
         )
         print(
-            f"Received data: {render_tables}\nreasoning_FK: {reasoning_FK}, disable_sqlFK: {disable_sqlFK}, rankdir: {rankdir}, render_related: {render_related}"
+            f"Received data: {render_tables}\nreasoning_FK: {reasoning_FK}, reasoning_all_FK: {reasoning_all_FK}, disable_sqlFK: {disable_sqlFK}, rankdir: {rankdir}, render_related: {render_related}"
         )
         diagram_gen = ERGenerator(
             driver=driver,
@@ -313,6 +269,7 @@ def erfit(request: HttpRequest) -> HttpResponse:
             username=username,
             password=password,
             reasoning_FK=reasoning_FK,
+            reasoning_all_FK=reasoning_all_FK,
             disable_sql_FK=disable_sqlFK,
         )
         svg_data = diagram_gen.render_diagrams(
@@ -320,52 +277,29 @@ def erfit(request: HttpRequest) -> HttpResponse:
             render_tables=render_tables,
             render_related=render_related,
         ).decode("utf-8")
-        # return a width height of 100% svg fit to the container
-        html = f"""
-        <html>
-        <head>
-            <style>
-            html, body {{
-                margin: 0;
-                padding: 0;
-                width: 100vw;
-                height: 100vh;
-                overflow: hidden;
-            }}
-            .svg-container {{
-                width: 100vw;
-                height: 100vh;
-            }}
-            .svg-container svg {{
-                width: 100%;
-                height: 100%;
-                display: block;
-            }}
-            </style>
-        </head>
-        <body>
-            <div class="svg-container">
-            {svg_data}
-            </div>
-        </body>
-        </html>
-        """
-        return HttpResponse(html, content_type="text/html")
+        svg_data = re.sub(
+            r'<svg\s+width="[^"]+"\s+height="[^"]+"',
+            '<svg preserveAspectRatio="xMidYMid meet"',
+            svg_data,
+            count=1,
+        )
+        return HttpResponse(svg_data, content_type="image/svg+xml")
     else:
-        return HttpResponse("Method not allowed", status=405)
-
-
-def api1(request):
-    return JsonResponse({"message": "Hello, World!"})
-
-
-def http1(request):
-    return HttpResponse("Hello, World!")
-
-
-def api2(request):
-    return JsonResponse({"api1": "api/api1"})
-
-
-def http2(request):
-    return HttpResponse("api/http1")
+        diagram_gen = ERGenerator(
+            driver=driver,
+            server=server,
+            database=Name_database,
+            username=username,
+            password=password,
+        )
+        svg_data = diagram_gen.render_diagrams().decode("utf-8")
+        svg_data = re.sub(
+            r'<svg\s+width="[^"]+"\s+height="[^"]+"',
+            '<svg preserveAspectRatio="xMidYMid meet"',
+            svg_data,
+            count=1,
+        ).decode("utf-8")
+        return HttpResponse(
+            svg_data,
+            content_type="image/svg+xml",
+        )

@@ -22,7 +22,7 @@ class dbConnection:
         self.schema: Optional[str] = schema
 
     def __enter__(self):
-        self.connection_string: str = f"DRIVER={{{self.driver}}};SERVER={self.server};DATABASE={self.database};UID={self.username};PWD={self.password}"
+        self.connection_string: str = f"DRIVER={self.driver};SERVER={self.server};DATABASE={self.database};UID={self.username};PWD={self.password}"
         self.connection: pyodbc.Connection = pyodbc.connect(self.connection_string)
         self.db_name: str = self.connection.getinfo(pyodbc.SQL_DATABASE_NAME)
         self.db_type: str = self.connection.getinfo(pyodbc.SQL_DBMS_NAME).lower()

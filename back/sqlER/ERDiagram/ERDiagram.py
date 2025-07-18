@@ -286,6 +286,7 @@ class ERDiagram:
         format: str = "svg",
         render_tables: Optional[list[str]] = None,
         render_related: bool = False,
+        field_omission: bool = False,
     ) -> bytes:
         """
         Render ER diagram to bytes.
@@ -313,15 +314,24 @@ class ERDiagram:
         er.attr(splines="polyline")
 
         dst_table = render_tables
+        render_fields: list[str] = []
         if render_tables is not None and render_related:
             dst_table = render_tables.copy()
             for rel in self.relations:
                 from_table = rel["from_table"]
+                from_field = rel["from_field"]
                 to_table = rel["to_table"]
+                to_field = rel["to_field"]
                 if from_table in dst_table:
                     render_tables.append(to_table)
                 if to_table in dst_table:
                     render_tables.append(from_table)
+                render_fields.append(from_field)
+                render_fields.append(to_field)
+
+        render_fields = list(set(render_fields))  # Remove duplicates
+        if not field_omission:
+            render_fields = []
 
         # Render all tables
         for table in self.tables.values():
@@ -332,7 +342,9 @@ class ERDiagram:
                 render = True
 
             if render:
-                er.node(table.name, label=self._generate_table_label(table))
+                er.node(
+                    table.name, label=self._generate_table_label(table, render_fields)
+                )
                 # Add external comments for the table
                 if table.comments:
                     comment_node_name = f"{table.name}_comment"
@@ -386,6 +398,7 @@ class ERDiagram:
         format: str = "svg",
         render_tables: Optional[list[str]] = None,
         render_related: bool = False,
+        field_omission: bool = False,
     ) -> None:
         """
         Render ER diagram to file.
@@ -395,17 +408,21 @@ class ERDiagram:
             format (str, optional): Output format. Defaults to "svg".
         """
         er_bytes = self.render_to_bytes(
-            format, render_tables=render_tables, render_related=render_related
+            format,
+            render_tables=render_tables,
+            render_related=render_related,
+            field_omission=field_omission,
         )
         with open(f"{filename}.{format}", "wb") as f:
             f.write(er_bytes)
 
-    def _generate_table_label(self, table: Table) -> str:
+    def _generate_table_label(self, table: Table, render_fields: list[str] = []) -> str:
         """
         Generate high-quality table structure label.
 
         Args:
             table (Table): Table object
+            render_fields (list[str], optional): List of fields to render. If empty, renders all fields. Defaults to [].
 
         Returns:
             str: HTML-like label string
@@ -425,6 +442,8 @@ class ERDiagram:
             f'<TR><TD COLSPAN="4" BGCOLOR="{header_bg}">{title}</TD></TR>',
             '<TR><TD ALIGN="LEFT"><B>Column</B></TD><TD ALIGN="LEFT"><B>Type</B></TD><TD ALIGN="LEFT"><B>nullable</B></TD><TD ALIGN="LEFT"><B>Constraint</B></TD></TR>',
         ]
+
+        omitted: bool = False
 
         for name, type, constraint, nullable in table.fields:
             type_cell = f'<TD ALIGN="LEFT">{type}</TD>'
@@ -468,16 +487,28 @@ class ERDiagram:
                 )
                 row = f"<TR>{name_cell}{type_cell}{nullable_cell}{constraint_cell}</TR>"
             else:
-                constraint += " " * int(len(constraint) / DIVISION)
-                name_cell = f'<TD ALIGN="LEFT">{name}</TD>'
-                constraint_cell = (
-                    f'<TD ALIGN="LEFT">{constraint}</TD>'
-                    if constraint
-                    else '<TD ALIGN="LEFT"></TD>'
-                )
-                row = f"<TR>{name_cell}{type_cell}{nullable_cell}{constraint_cell}</TR>"
+                render_field: bool = True
+                if len(render_fields) != 0 and name not in render_fields:
+                    render_field = False
+                if render_field:
+                    constraint += " " * int(len(constraint) / DIVISION)
+                    name_cell = f'<TD ALIGN="LEFT">{name}</TD>'
+                    constraint_cell = (
+                        f'<TD ALIGN="LEFT">{constraint}</TD>'
+                        if constraint
+                        else '<TD ALIGN="LEFT"></TD>'
+                    )
+                    row = f"<TR>{name_cell}{type_cell}{nullable_cell}{constraint_cell}</TR>"
+                else:
+                    omitted = True
+                    continue
 
             rows.append(row)
+
+        if omitted:
+            rows.append(
+                '<TR><TD ALIGN="LEFT">...</TD><TD ALIGN="LEFT">...</TD><TD ALIGN="LEFT">...</TD><TD ALIGN="LEFT">...</TD></TR>'
+            )
 
         return f'''<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="{self.cell_padding}">
         {"".join(rows)}
@@ -773,13 +804,17 @@ class ERGenerator:
         dpi: int = 1300,
         render_tables: Optional[list[str]] = None,
         render_related: bool = False,
+        field_omission: bool = False,
     ) -> bytes:
         """
         Render all ER diagrams to bytes.
         """
         self.diagram.set_quality_settings(rankdir=rankdir, dpi=dpi)
         return self.diagram.render_to_bytes(
-            format="svg", render_tables=render_tables, render_related=render_related
+            format="svg",
+            render_tables=render_tables,
+            render_related=render_related,
+            field_omission=field_omission,
         )
 
     def render_file(
@@ -790,6 +825,7 @@ class ERGenerator:
         rankdir: TypeRankdir = TypeRankdir.TB,
         render_tables: Optional[list[str]] = None,
         render_related: bool = False,
+        field_omission: bool = False,
     ) -> None:
         """
         Render the ER diagram to a file.
@@ -800,4 +836,5 @@ class ERGenerator:
             filename=filename,
             render_tables=render_tables,
             render_related=render_related,
+            field_omission=field_omission,
         )

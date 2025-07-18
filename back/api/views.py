@@ -62,6 +62,10 @@ def testHMTL(request: HttpRequest) -> HttpResponse:
               <input type="checkbox" name="reasoning_all_FK" checked>
               推理非主键字段
             </label>
+            <label>
+              <input type="checkbox" name="field_omission" checked>
+              字段省略
+            </label>
             <label style="margin-left:2em;">
               图方向:
               <select name="rankdir">
@@ -165,6 +169,7 @@ def testHMTL(request: HttpRequest) -> HttpResponse:
             params.set('reasoning_FK', document.querySelector('input[name="reasoning_FK"]').checked ? 'True' : 'False');
             params.set('reasoning_all_FK', document.querySelector('input[name="reasoning_all_FK"]').checked ? 'True' : 'False');
             params.set('rankdir', document.querySelector('select[name="rankdir"]').value);
+            params.set('field_omission', document.querySelector('input[name="field_omission"]').checked ? 'True' : 'False');
             window.location.href = "{draw_url}?" + params.toString();
           }};
         </script>
@@ -241,6 +246,7 @@ def er(request: HttpRequest) -> HttpResponse:
         disable_sqlFK = False
         rankdir = TypeRankdir.LR
         render_related = True
+        field_omission: bool = False
 
         render_tables: str = request.GET.get("tables", None)
         render_tables: list[str] = render_tables.split(",") if render_tables else None
@@ -259,8 +265,14 @@ def er(request: HttpRequest) -> HttpResponse:
         render_related: bool = (
             request.GET.get("render_related", "true").lower() == "true"
         )
+
+        field_omission: bool = (
+            request.GET.get("field_omission", "false").lower() == "true"
+        )
         print(
-            f"Received data: {render_tables}\nreasoning_FK: {reasoning_FK}, reasoning_all_FK: {reasoning_all_FK}, disable_sqlFK: {disable_sqlFK}, rankdir: {rankdir}, render_related: {render_related}"
+            f"Received data: {render_tables}\nreasoning_FK: {reasoning_FK}, reasoning_all_FK: {reasoning_all_FK},\
+            disable_sqlFK: {disable_sqlFK}, rankdir: {rankdir}, render_related: {render_related},\
+            field_omission: {field_omission}"
         )
         diagram_gen = ERGenerator(
             driver=driver,
@@ -276,6 +288,7 @@ def er(request: HttpRequest) -> HttpResponse:
             rankdir=rankdir,
             render_tables=render_tables,
             render_related=render_related,
+            field_omission=field_omission,
         ).decode("utf-8")
         svg_data = re.sub(
             r'<svg\s+width="[^"]+"\s+height="[^"]+"',

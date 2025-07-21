@@ -315,19 +315,25 @@ class ERDiagram:
 
         dst_table = render_tables
         render_fields: list[str] = []
-        if render_tables is not None and render_related:
+        if render_tables is not None:
             dst_table = render_tables.copy()
             for rel in self.relations:
                 from_table = rel["from_table"]
                 from_field = rel["from_field"]
                 to_table = rel["to_table"]
                 to_field = rel["to_field"]
-                if from_table in dst_table:
+                if from_table in dst_table and render_related:
                     render_tables.append(to_table)
-                if to_table in dst_table:
+                if to_table in dst_table and render_related:
                     render_tables.append(from_table)
-                render_fields.append(from_field)
-                render_fields.append(to_field)
+            for rel in self.relations:
+                from_table = rel["from_table"]
+                from_field = rel["from_field"]
+                to_table = rel["to_table"]
+                to_field = rel["to_field"]
+                if from_table in render_tables and to_table in render_tables:
+                    render_fields.append(from_field)
+                    render_fields.append(to_field)
 
         render_fields = list(set(render_fields))  # Remove duplicates
         if not field_omission:

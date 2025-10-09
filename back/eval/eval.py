@@ -128,6 +128,10 @@ def eval_qa(questionnaire_1_counts, questionnaire_2_counts, method="entropy"):
 
     level_name = "控制级"
 
+    # print("l1_w:",l1_weights)
+    # print("l2_w:",l2_weights)
+    # print("l3_w:",l3_weights)
+
     # 构建字典结构
     score_dict = build_score_structure(
         level1_names,
@@ -136,6 +140,9 @@ def eval_qa(questionnaire_1_counts, questionnaire_2_counts, method="entropy"):
         l1_scores,
         l2_scores,
         l3_scores,
+        l1_weights[0],
+        l2_weights,
+        l3_weights,
         model_scores,
         level_name,
     )
@@ -144,9 +151,9 @@ def eval_qa(questionnaire_1_counts, questionnaire_2_counts, method="entropy"):
     print(f"模型得分（采用{method}方法）：", model_scores)
     # print(json.dumps(score_dict, ensure_ascii=False, indent=2))
 
-    # with open('output.txt', 'w', encoding='utf-8') as f:
-    #     f.write(json.dumps(score_dict, ensure_ascii=False, indent=2))
-    #     print("output.txt写入成功!")
+    with open("output.txt", "w", encoding="utf-8") as f:
+        f.write(json.dumps(score_dict, ensure_ascii=False, indent=2))
+        print("output.txt写入成功!")
 
     print("第六步已完成")
 
@@ -154,7 +161,7 @@ def eval_qa(questionnaire_1_counts, questionnaire_2_counts, method="entropy"):
 
 
 if __name__ == "__main__":
-    print(eval_qa(qa1_case1, qa2_case1, "bwm"))
+    eval_qa(qa1_case1, qa2_case1, "bwm")
     # main(qa1_case2,qa2_case2,"bwm")
     # main(qa1_case3,qa2_case3,"bwm")
     # main(qa1_case4,qa2_case4,"bwm")

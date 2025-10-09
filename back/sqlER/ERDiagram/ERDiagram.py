@@ -668,7 +668,7 @@ class ERGenerator:
             database=self.database,
             username=self.username,
             password=self.password,
-            schema="dbo",
+            schema_name="dbo",
         )
         with dbcnxt:
             schemas = dbcnxt.schemas()
@@ -681,7 +681,7 @@ class ERGenerator:
                 database=self.database,
                 username=self.username,
                 password=self.password,
-                schema=schema,
+                schema_name=schema,
             )
             with dbcnxt:
                 tables = dbcnxt.tables(exclusion=True)

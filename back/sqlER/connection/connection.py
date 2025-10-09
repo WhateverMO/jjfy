@@ -12,14 +12,14 @@ class dbConnection:
         database: Optional[str] = None,
         username: Optional[str] = None,
         password: Optional[str] = None,
-        schema: Optional[str] = None,
+        schema_name: Optional[str] = None,
     ):
         self.driver: Optional[str] = driver
         self.server: Optional[str] = server
         self.database: Optional[str] = database
         self.username: Optional[str] = username
         self.password: Optional[str] = password
-        self.schema: Optional[str] = schema
+        self.schema: Optional[str] = schema_name
 
     def __enter__(self):
         self.connection_string: str = f"DRIVER={self.driver};SERVER={self.server};DATABASE={self.database};UID={self.username};PWD={self.password}"

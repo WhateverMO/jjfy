@@ -114,11 +114,14 @@ print(len(questionnaire_counts))
 
 questionnaire_counts = delete_elements(questionnaire_counts)
 split_qs = split_questionnaire_counts_random(questionnaire_counts, seed=42)
-# print(split_qs)
+print(split_qs)
 # print(f"拆分后问卷总数: {len(split_qs)}")
 # print("前3份问卷示例:")
 # for i in range(len(split_qs)):
 #     print(split_qs[i])
+
+
+
 
 
 

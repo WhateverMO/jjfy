@@ -200,7 +200,21 @@ def er(request: HttpRequest) -> HttpResponse:
         )
 
 
+from eval.generate_dict_main import level1_names, level2_names, level3_names
+from eval.question_2 import SECTION_INDICES
+
+
 def eval(request: HttpRequest) -> HttpResponse:
     method: str = request.GET.get("method", "entropy")
-    res = eval_qa(qa1_case1, qa2_case1, method=method)
+    res = eval_qa(
+        qa1_case1,
+        qa2_case1,
+        [8, 3, 4, 2, 2, 4, 4, 3, 3],
+        [3, 2, 3, 3, 3, 2, 3, 3, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 3, 3, 2, 2, 3],
+        level1_names,
+        level2_names,
+        level3_names,
+        SECTION_INDICES,
+        method=method,
+    )
     return JsonResponse(res)

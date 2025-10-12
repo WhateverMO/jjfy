@@ -148,4 +148,5 @@ list2 = [3, 2, 3, 3, 3, 2, 3, 3, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 3, 3, 2, 2,
 SECTION_COUNTS.extend(list2)
 # print(SECTION_COUNTS)
 # 固定各选项分数
+
 SCORES = [5, 2.9, 1.7]

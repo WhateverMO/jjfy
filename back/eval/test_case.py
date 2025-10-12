@@ -224,12 +224,15 @@ qa2_case4 = generate_qa_modify(qa2_sum, qa2_config, qa2_8_len, qa2_9_len, reset_
 # print(qa2_case4)
 
 if __name__ == "__main__":
-    # print("问卷1，案例1：\n", qa1_case1)
+    print("问卷1，案例1：\n", qa1_case1)
     print("问卷1，案例2：\n", qa1_case2)
-    # print("问卷1，案例3：\n", qa1_case3)
-    # print("问卷1，案例4：\n", qa1_case4)
-    # print("问卷2，案例1：\n", qa2_case1)
+    print("问卷1，案例3：\n", qa1_case3)
+    print("问卷1，案例4：\n", qa1_case4)
+    print("问卷2，案例1：\n", qa2_case1)
     print("问卷2，案例2：\n", qa2_case2)
-    # print("问卷2，案例3：\n", qa2_case3)
-    # print("问卷2，案例4：\n", qa2_case4)
+    print("问卷2，案例3：\n", qa2_case3)
+    print("问卷2，案例4：\n", qa2_case4)
     print("Done")
+
+
+ 

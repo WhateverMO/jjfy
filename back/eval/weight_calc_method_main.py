@@ -65,6 +65,9 @@ def split_list_at_indices(lst, *split_sizes):
     - 如果分割大小总和小于列表长度：剩余元素自动组成最后一个子列表
     - 如果分割大小总和大于列表长度：抛出错误
     """
+    if len(split_sizes) == 1 and isinstance(split_sizes[0], list):
+        split_sizes = split_sizes[0]
+
     total_split_size = sum(split_sizes)
 
     # 检查分割大小总和是否大于列表长度

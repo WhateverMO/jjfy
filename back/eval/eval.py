@@ -41,7 +41,7 @@ def eval_qa(
     q2_section,
     method="entropy",
 ):
-    questionnaire_1_counts = delete_elements(questionnaire_1_counts)
+    # questionnaire_1_counts = delete_elements(questionnaire_1_counts)
     split_qs = split_questionnaire_counts_random(questionnaire_1_counts, seed=42)
     # print(split_qs)
     # print(f"拆分后问卷总数: {len(split_qs)}")

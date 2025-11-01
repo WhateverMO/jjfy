@@ -8,30 +8,6 @@ cd back
 uv sync
 ```
 
-前端环境：
-
-npm:
-
-```
-
-cd front
-
-npm install
-
-npm run server
-```
-
-pnpm:
-
-```
-
-cd front
-
-pnpm install
-
-pnpm dev
-```
-
 模型算法部分的输入输出
 
 输入：

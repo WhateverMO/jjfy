@@ -8,6 +8,4 @@ cd back
 uv sync
 ```
 
-```
-
 具体文档请参考docs内的md
